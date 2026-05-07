@@ -1,4 +1,4 @@
-exports.getEligibleRoles = (school, department) => {
+exports.getEligibleRoles = (school, department, employeeRole) => {
 
     let roles = [];
 
@@ -85,6 +85,52 @@ exports.getEligibleRoles = (school, department) => {
             "pro_vc_sp", "dean_r&c", "dean_careers", "dean_student_affairs", "dean_admissions", "dean_administration", "dean_iqac", "CoE", "dean_ir"
         ];
 
+    }
+    else if (school === "UI") {
+
+        const restrictedRoles = [
+            "dean_r&c",
+            "dean_careers",
+            "dean_student_affairs",
+            "dean_admissions",
+            "dean_administration",
+            "dean_iqac",
+            "CoE",
+            "dean_ir"
+        ];
+
+        const allRoles = [
+            "associate_dean_soe",
+            "associate_dean_sos",
+            "associate_dean_fe",
+            "dean_sop",
+            "associate_dean_sob",
+            "registrar",
+            "pro_vc_academics",
+            "pro_vc_es",
+            "pro_vc_sp",
+            "dean_r&c",
+            "dean_careers",
+            "dean_student_affairs",
+            "dean_admissions",
+            "dean_administration",
+            "dean_iqac",
+            "CoE",
+            "dean_ir"
+        ];
+
+        // if current logged employee belongs to restricted roles
+        if (restrictedRoles.includes(employeeRole)) {
+
+            roles = allRoles.filter(
+                (role) => role !== employeeRole
+            );
+
+        } else {
+
+            roles = allRoles;
+
+        }
     }
 
     return roles;

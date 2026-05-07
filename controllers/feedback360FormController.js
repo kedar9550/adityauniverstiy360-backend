@@ -46,7 +46,7 @@ exports.getFeedbackForm = async (req, res) => {
     }
 
     // 3️ Eligible roles
-    const roleKeys = roleService.getEligibleRoles(school, department);
+    const roleKeys = roleService.getEligibleRoles(school, department, employeeRole);
 
     let roles = await Role.find({
       key: { $in: roleKeys }
