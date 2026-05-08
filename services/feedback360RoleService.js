@@ -26,8 +26,6 @@ exports.getEligibleRoles = (school, department, employeeRole) => {
 
     if (school && school.toUpperCase() === "SOE") {
 
-
-
         //  department empty = all departments
         if (!department || department === "") {
             roles.push("associate_dean_soe", "associate_dean_fe");
@@ -51,6 +49,11 @@ exports.getEligibleRoles = (school, department, employeeRole) => {
 
         roles.push("registrar", "pro_vc_academics", "pro_vc_es", "pro_vc_sp", "dean_r&c", "dean_careers", "dean_student_affairs", "dean_admissions", "dean_administration", "dean_iqac", "CoE", "dean_ir");
 
+        // Assoc Dean/Dean can also give feedback to other schools' deans (optional)
+        if (employeeRole === "Assoc Dean/Dean") {
+            roles.push("associate_dean_sos", "associate_dean_sob", "dean_sop");
+        }
+
     }
 
     else if (school === "SOS") {
@@ -61,6 +64,11 @@ exports.getEligibleRoles = (school, department, employeeRole) => {
             "pro_vc_academics",
             "pro_vc_es", "pro_vc_sp", "dean_r&c", "dean_careers", "dean_student_affairs", "dean_admissions", "dean_administration", "dean_iqac", "CoE", "dean_ir"
         ];
+
+        // Assoc Dean/Dean can also give feedback to other schools' deans (optional)
+        if (employeeRole === "Assoc Dean/Dean") {
+            roles.push("associate_dean_soe", "associate_dean_fe", "associate_dean_sob", "dean_sop");
+        }
 
     }
 
@@ -73,6 +81,11 @@ exports.getEligibleRoles = (school, department, employeeRole) => {
             "pro_vc_es", "pro_vc_sp", "dean_r&c", "dean_careers", "dean_student_affairs", "dean_admissions", "dean_administration", "dean_iqac", "CoE", "dean_ir"
         ];
 
+        // Assoc Dean/Dean can also give feedback to other schools' deans (optional)
+        if (employeeRole === "Assoc Dean/Dean") {
+            roles.push("associate_dean_soe", "associate_dean_fe", "associate_dean_sos", "associate_dean_sob");
+        }
+
     }
 
     else if (school === "SOB") {
@@ -84,6 +97,11 @@ exports.getEligibleRoles = (school, department, employeeRole) => {
             "pro_vc_es",
             "pro_vc_sp", "dean_r&c", "dean_careers", "dean_student_affairs", "dean_admissions", "dean_administration", "dean_iqac", "CoE", "dean_ir"
         ];
+
+        // Assoc Dean/Dean can also give feedback to other schools' deans (optional)
+        if (employeeRole === "Assoc Dean/Dean") {
+            roles.push("associate_dean_soe", "associate_dean_fe", "associate_dean_sos", "dean_sop");
+        }
 
     }
     else if (school === "UI") {

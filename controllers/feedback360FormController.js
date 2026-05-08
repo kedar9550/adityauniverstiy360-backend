@@ -55,14 +55,14 @@ exports.getFeedbackForm = async (req, res) => {
     if (employeeRole === "HOD") {
       roles = roles.filter(r => r.key !== "hod");
     } else if (employeeRole === "Assoc Dean/Dean") {
-      const excludedKeys = [
-        "hod",
-        "associate_dean_soe",
-        "associate_dean_fe",
-        "associate_dean_sos",
-        "associate_dean_sob",
-        "dean_sop"
-      ];
+      // Only exclude the user's OWN school deans + hod (they can see other schools' deans as optional)
+      const ownDeansBySchool = {
+        "SOE": ["hod", "associate_dean_soe", "associate_dean_fe"],
+        "SOS": ["hod", "associate_dean_sos"],
+        "SOP": ["hod", "dean_sop"],
+        "SOB": ["hod", "associate_dean_sob"],
+      };
+      const excludedKeys = ownDeansBySchool[school] || ["hod"];
       roles = roles.filter(r => !excludedKeys.includes(r.key));
     }
 
@@ -120,10 +120,35 @@ exports.getFeedbackForm = async (req, res) => {
       }
     }
 
-    // 8️Filter pending roles
-    const pendingRoles = roles.filter(
-      r => !completedRoleIds.includes(r._id.toString())
-    );
+    // Sort pending roles by defined display order
+    const ROLE_ORDER = [
+      "registrar",
+      "pro_vc_academics",
+      "pro_vc_es",
+      "pro_vc_sp",
+      "dean_r&c",
+      "dean_careers",
+      "dean_student_affairs",
+      "dean_admissions",
+      "dean_administration",
+      "dean_iqac",
+      "CoE",
+      "dean_ir",
+      "associate_dean_sos",
+      "associate_dean_sob",
+      "dean_sop",
+      "associate_dean_soe",
+      "associate_dean_fe",
+      "hod",
+    ];
+
+    const pendingRoles = roles
+      .filter(r => !completedRoleIds.includes(r._id.toString()))
+      .sort((a, b) => {
+        const ai = ROLE_ORDER.indexOf(a.key);
+        const bi = ROLE_ORDER.indexOf(b.key);
+        return (ai === -1 ? 999 : ai) - (bi === -1 ? 999 : bi);
+      });
 
     if (pendingRoles.length === 0) {
       return res.status(200).json({
@@ -132,14 +157,11 @@ exports.getFeedbackForm = async (req, res) => {
       });
     }
 
-    // 10 Fetch active role assignments for pendings
-    const pendingRoleIds = pendingRoles.map(r => r._id);
-    const assignments = await Assignment.find({
-      role: { $in: pendingRoleIds },
-      active: true
-    });
+    // 10 Fetch active role assignments for pendings (populate role key for resilient matching)
+    const assignments = await Assignment.find({ active: true }).populate("role", "key");
 
     // 10.5 Fetch questions for pendings
+    const pendingRoleIds = pendingRoles.map(r => r._id);
     const questions = await Question
       .find({ role: { $in: pendingRoleIds } })
       .populate("section")
@@ -152,7 +174,8 @@ exports.getFeedbackForm = async (req, res) => {
       // Find matching assignment
       let assignedName = "";
       let empId = "";
-      const roleAssignments = assignments.filter(a => a.role.toString() === role._id.toString());
+      // Match by role key (resilient - works even if role ObjectId was recreated)
+      const roleAssignments = assignments.filter(a => a.role?.key === role.key);
 
       // 1. Exact match (School & Dept)
       let found = roleAssignments.find(a =>
@@ -168,9 +191,14 @@ exports.getFeedbackForm = async (req, res) => {
         );
       }
 
-      // 3. Global match
+      // 3. Global match (no school, no dept)
       if (!found) {
         found = roleAssignments.find(a => !a.school && !a.department);
+      }
+
+      // 4. Any assignment fallback (e.g. Associate Deans viewed from University context)
+      if (!found && roleAssignments.length > 0) {
+        found = roleAssignments[0];
       }
 
       if (found) {
@@ -184,7 +212,7 @@ exports.getFeedbackForm = async (req, res) => {
         name: role.name,
         assignedName, // Pass the assigned name
         empId,       // Pass the employee id
-        mandatory: employeeRole === "Assoc Dean/Dean" ? false : role.mandatory,
+        mandatory: (employeeRole === "Assoc Dean/Dean" || school === "UI") ? false : role.mandatory,
         questions: []
       };
     });
