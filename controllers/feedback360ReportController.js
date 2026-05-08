@@ -207,7 +207,7 @@ exports.getReport = async (req, res) => {
 
   try {
 
-    const { role, school, department, roundId } = req.query;
+    const { role, school, department, roundId, giverRole } = req.query;
 
     if (!role)
       return res.status(400).json({ message: "Role is required" });
@@ -232,6 +232,17 @@ exports.getReport = async (req, res) => {
 
     if (finalRoundId)
       filter.round = new mongoose.Types.ObjectId(finalRoundId);
+
+    // Filter by giver role bucket if requested
+    const universityDeanKeysGR = [
+      "dean_r&c", "dean_careers", "dean_student_affairs", "dean_admissions",
+      "dean_administration", "dean_iqac", "CoE", "dean_ir",
+      "associate_dean_soe", "associate_dean_fe", "associate_dean_sos",
+      "associate_dean_sob", "dean_sop", "Assoc Dean/Dean"
+    ];
+    if (giverRole === "Faculty") filter.giverRole = "Faculty";
+    else if (giverRole === "HOD") filter.giverRole = "HOD";
+    else if (giverRole === "Dean") filter.giverRole = { $in: universityDeanKeysGR };
 
     const ratingResults = await Feedback.aggregate([
       { $match: filter },
@@ -297,14 +308,63 @@ exports.getReport = async (req, res) => {
     const totalResponses = await Feedback.countDocuments(filter);
     const sampleDoc = await Feedback.findOne(filter).select("targetPersonName empId").lean();
 
-    if (totalResponses === 0) {
+    // Giver role breakdown with avg rating per bucket
+    const giverRoleAgg = await Feedback.aggregate([
+      { $match: filter },
+      { $unwind: "$ratingAnswers" },
+      {
+        $group: {
+          _id: "$giverRole",
+          count: { $addToSet: "$_id" },
+          ratingSum: { $sum: "$ratingAnswers.rating" },
+          ratingCount: { $sum: 1 }
+        }
+      }
+    ]);
 
+    // Group into Faculty / HoD / Dean buckets
+    const universityDeanKeys = [
+      "dean_r&c", "dean_careers", "dean_student_affairs", "dean_admissions",
+      "dean_administration", "dean_iqac", "CoE", "dean_ir",
+      "associate_dean_soe", "associate_dean_fe", "associate_dean_sos",
+      "associate_dean_sob", "dean_sop", "Assoc Dean/Dean"
+    ];
+
+    const giverRoleBuckets = {
+      Faculty: { count: 0, ratingSum: 0, ratingCount: 0 },
+      HOD:     { count: 0, ratingSum: 0, ratingCount: 0 },
+      Dean:    { count: 0, ratingSum: 0, ratingCount: 0 },
+    };
+
+    giverRoleAgg.forEach(g => {
+      const role = g._id || "";
+      let bucket = null;
+      if (role === "Faculty") bucket = "Faculty";
+      else if (role === "HOD") bucket = "HOD";
+      else if (universityDeanKeys.includes(role)) bucket = "Dean";
+      if (bucket) {
+        giverRoleBuckets[bucket].count += g.count.length;
+        giverRoleBuckets[bucket].ratingSum += g.ratingSum;
+        giverRoleBuckets[bucket].ratingCount += g.ratingCount;
+      }
+    });
+
+    const giverRoleStats = {};
+    Object.entries(giverRoleBuckets).forEach(([key, val]) => {
+      giverRoleStats[key] = {
+        count: val.count,
+        avgRating: val.ratingCount > 0 ? Number((val.ratingSum / val.ratingCount).toFixed(2)) : 0
+      };
+    });
+
+    if (totalResponses === 0) {
       return res.json({
         responses: 0,
         overallRating: 0,
         sections: [],
         questions: [],
-        suggestions: []
+        suggestions: [],
+        giverRoleStats
       });
     }
 
@@ -382,7 +442,8 @@ exports.getReport = async (req, res) => {
 
       suggestions,
       targetPersonName: sampleDoc?.targetPersonName || "",
-      empId: sampleDoc?.empId || ""
+      empId: sampleDoc?.empId || "",
+      giverRoleStats
     });
 
   } catch (err) {
@@ -577,22 +638,52 @@ exports.getGiverRoleStats = async (req, res) => {
     if (finalRoundId)
       filter.round = new mongoose.Types.ObjectId(finalRoundId);
 
+    const universityDeanKeys = [
+      "dean_r&c", "dean_careers", "dean_student_affairs", "dean_admissions",
+      "dean_administration", "dean_iqac", "CoE", "dean_ir",
+      "associate_dean_soe", "associate_dean_fe", "associate_dean_sos",
+      "associate_dean_sob", "dean_sop", "Assoc Dean/Dean"
+    ];
+
     const stats = await Feedback.aggregate([
       { $match: filter },
       {
+        $addFields: {
+          bucketedRole: {
+            $cond: [
+              { $eq: ["$giverRole", "Faculty"] },
+              "Faculty",
+              {
+                $cond: [
+                  { $eq: ["$giverRole", "HOD"] },
+                  "HOD",
+                  {
+                    $cond: [
+                      { $in: ["$giverRole", universityDeanKeys] },
+                      "Dean",
+                      "$giverRole"
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
+        }
+      },
+      {
         $group: {
-          _id: "$giverRole",
+          _id: "$bucketedRole",
           count: { $sum: 1 }
         }
       },
       {
         $project: {
-          role: { $ifNull: ["$_id", "Unknown"] },
+          role: "$_id",
           count: 1,
           _id: 0
         }
       },
-      { $sort: { count: -1 } }
+      { $sort: { role: 1 } }
     ]);
 
     res.json(stats);
