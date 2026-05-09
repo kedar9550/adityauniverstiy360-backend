@@ -278,7 +278,8 @@ exports.getReport = async (req, res) => {
         }
       },
 
-      { $unwind: "$section" }
+      { $unwind: "$section" },
+      { $sort: { "question.order": 1 } }
     ]);
 
     const textResults = await Feedback.aggregate([
@@ -302,7 +303,8 @@ exports.getReport = async (req, res) => {
         }
       },
 
-      { $unwind: "$question" }
+      { $unwind: "$question" },
+      { $sort: { "question.order": 1 } }
     ]);
 
     const totalResponses = await Feedback.countDocuments(filter);
@@ -460,7 +462,7 @@ exports.getRoundComparison = async (req, res) => {
 
   try {
 
-    const { round1, round2, role, school, department } = req.query;
+    const { round1, round2, role, school, department, giverRole } = req.query;
 
     if (!round1 || !round2 || !role)
       return res.status(400).json({ message: "round1, round2, and role are required parameters." });
@@ -477,6 +479,16 @@ exports.getRoundComparison = async (req, res) => {
 
     if (department && department !== "all")
       baseFilter.department = new mongoose.Types.ObjectId(department);
+
+    const universityDeanKeysGR = [
+      "dean_r&c", "dean_careers", "dean_student_affairs", "dean_admissions",
+      "dean_administration", "dean_iqac", "CoE", "dean_ir",
+      "associate_dean_soe", "associate_dean_fe", "associate_dean_sos",
+      "associate_dean_sob", "dean_sop", "Assoc Dean/Dean"
+    ];
+    if (giverRole === "Faculty") baseFilter.giverRole = "Faculty";
+    else if (giverRole === "HOD") baseFilter.giverRole = "HOD";
+    else if (giverRole === "Dean") baseFilter.giverRole = { $in: universityDeanKeysGR };
 
     const results = await Feedback.aggregate([
 
@@ -517,6 +529,7 @@ exports.getRoundComparison = async (req, res) => {
       },
 
       { $unwind: "$question" },
+      { $sort: { "question.order": 1 } },
 
       {
         $lookup: {
