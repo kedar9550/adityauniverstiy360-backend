@@ -9,7 +9,6 @@ const { protect, authorize } = require("../middleware/authMiddleware");
 router.get("/dashboard-stats", protect, authorize("REPORT_ADMIN"), reportController.getDashboardStats);
 router.get("/", protect, authorize("REPORT_ADMIN"), reportController.getReport);
 router.get("/compare", protect, authorize("REPORT_ADMIN"), reportController.getRoundComparison);
-router.get("/giver-stats", protect, authorize("REPORT_ADMIN"), reportController.getGiverRoleStats);
 
 
 module.exports = router;
