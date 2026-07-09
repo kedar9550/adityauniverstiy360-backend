@@ -54,10 +54,12 @@ exports.getFeedbackForm = async (req, res) => {
 
     if (employeeRole === "HOD") {
       roles = roles.filter(r => r.key !== "hod");
-    } else if (employeeRole === "Assoc Dean/Dean") {
+    } else if (employeeRole === "Assoc Dean/Dean" || employeeRole === "Assoc Dean - SOE" || employeeRole === "Dean - SOE") {
       // Only exclude the user's OWN school deans + hod (they can see other schools' deans as optional)
       const ownDeansBySchool = {
-        "SOE": ["hod", "associate_dean_soe", "associate_dean_fe"],
+        "SOE": employeeRole === "Assoc Dean - SOE" 
+          ? ["hod", "associate_dean_soe", "associate_dean_fe"] 
+          : (employeeRole === "Dean - SOE" ? ["hod", "dean_soe"] : ["hod", "associate_dean_soe", "associate_dean_fe"]),
         "SOS": ["hod", "associate_dean_sos"],
         "SOP": ["hod", "dean_sop"],
         "SOB": ["hod", "associate_dean_sob"],
@@ -183,22 +185,29 @@ exports.getFeedbackForm = async (req, res) => {
         a.department?.toString() === deptObj?._id.toString()
       );
 
-      // 2. School match (for Deans etc)
-      if (!found) {
-        found = roleAssignments.find(a =>
-          a.school?.toString() === schoolObj?._id.toString() &&
-          !a.department
-        );
-      }
+      if (role.key === "hod") {
+        if (!found) {
+          // If no HOD exists for this department, skip it entirely
+          return;
+        }
+      } else {
+        // 2. School match (for Deans etc)
+        if (!found) {
+          found = roleAssignments.find(a =>
+            a.school?.toString() === schoolObj?._id.toString() &&
+            !a.department
+          );
+        }
 
-      // 3. Global match (no school, no dept)
-      if (!found) {
-        found = roleAssignments.find(a => !a.school && !a.department);
-      }
+        // 3. Global match (no school, no dept)
+        if (!found) {
+          found = roleAssignments.find(a => !a.school && !a.department);
+        }
 
-      // 4. Any assignment fallback (e.g. Associate Deans viewed from University context)
-      if (!found && roleAssignments.length > 0) {
-        found = roleAssignments[0];
+        // 4. Any assignment fallback (e.g. Associate Deans viewed from University context)
+        if (!found && roleAssignments.length > 0) {
+          found = roleAssignments[0];
+        }
       }
 
       if (found) {
@@ -212,7 +221,7 @@ exports.getFeedbackForm = async (req, res) => {
         name: role.name,
         assignedName, // Pass the assigned name
         empId,       // Pass the employee id
-        mandatory: (employeeRole === "Assoc Dean/Dean" || school === "UI") ? false : role.mandatory,
+        mandatory: (employeeRole === "Assoc Dean/Dean" || employeeRole === "Assoc Dean - SOE" || employeeRole === "Dean - SOE" || school === "UI") ? false : role.mandatory,
         questions: []
       };
     });

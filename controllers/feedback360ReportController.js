@@ -238,7 +238,7 @@ exports.getReport = async (req, res) => {
       "dean_r&c", "dean_careers", "dean_student_affairs", "dean_admissions",
       "dean_administration", "dean_iqac", "CoE", "dean_ir",
       "associate_dean_soe", "associate_dean_fe", "associate_dean_sos",
-      "associate_dean_sob", "dean_sop", "Assoc Dean/Dean"
+      "associate_dean_sob", "dean_sop", "Assoc Dean/Dean", "Assoc Dean - SOE", "Dean - SOE"
     ];
     if (giverRole === "Faculty") filter.giverRole = "Faculty";
     else if (giverRole === "HOD") filter.giverRole = "HOD";
@@ -329,7 +329,7 @@ exports.getReport = async (req, res) => {
       "dean_r&c", "dean_careers", "dean_student_affairs", "dean_admissions",
       "dean_administration", "dean_iqac", "CoE", "dean_ir",
       "associate_dean_soe", "associate_dean_fe", "associate_dean_sos",
-      "associate_dean_sob", "dean_sop", "Assoc Dean/Dean"
+      "associate_dean_sob", "dean_sop", "Assoc Dean/Dean", "Assoc Dean - SOE", "Dean - SOE"
     ];
 
     const giverRoleBuckets = {
@@ -484,7 +484,7 @@ exports.getRoundComparison = async (req, res) => {
       "dean_r&c", "dean_careers", "dean_student_affairs", "dean_admissions",
       "dean_administration", "dean_iqac", "CoE", "dean_ir",
       "associate_dean_soe", "associate_dean_fe", "associate_dean_sos",
-      "associate_dean_sob", "dean_sop", "Assoc Dean/Dean"
+      "associate_dean_sob", "dean_sop", "Assoc Dean/Dean", "Assoc Dean - SOE", "Dean - SOE"
     ];
     if (giverRole === "Faculty") baseFilter.giverRole = "Faculty";
     else if (giverRole === "HOD") baseFilter.giverRole = "HOD";
@@ -655,7 +655,7 @@ exports.getGiverRoleStats = async (req, res) => {
       "dean_r&c", "dean_careers", "dean_student_affairs", "dean_admissions",
       "dean_administration", "dean_iqac", "CoE", "dean_ir",
       "associate_dean_soe", "associate_dean_fe", "associate_dean_sos",
-      "associate_dean_sob", "dean_sop", "Assoc Dean/Dean"
+      "associate_dean_sob", "dean_sop", "Assoc Dean/Dean", "Assoc Dean - SOE", "Dean - SOE"
     ];
 
     const stats = await Feedback.aggregate([
