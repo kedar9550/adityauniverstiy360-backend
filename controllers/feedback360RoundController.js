@@ -4,7 +4,7 @@ const Feedback360Round = require("../models/Feedback360Round");
 exports.createRound = async (req, res) => {
   try {
     console.log("Creating Round with body:", req.body);
-    const { academicYear, cycle, startDate, endDate } = req.body;
+    const { academicYear, cycle, startDate, endDate, dojCutoff } = req.body;
     const active = req.body.active === true || req.body.active === "true";
 
     // Auto-calculate round number (Find Max and add 1)
@@ -23,6 +23,7 @@ exports.createRound = async (req, res) => {
       round,
       startDate,
       endDate,
+      dojCutoff,
       active: active || false
     });
 
@@ -65,7 +66,7 @@ exports.getActiveRound = async (req, res) => {
 exports.updateRound = async (req, res) => {
   try {
     const { id } = req.params;
-    const { academicYear, cycle, round, startDate, endDate } = req.body;
+    const { academicYear, cycle, round, startDate, endDate, dojCutoff } = req.body;
     const active = req.body.active === true || req.body.active === "true";
 
     // If making active, deactivate all others
@@ -75,7 +76,7 @@ exports.updateRound = async (req, res) => {
 
     const updatedRound = await Feedback360Round.findByIdAndUpdate(
       id,
-      { academicYear, cycle, round, startDate, endDate, active },
+      { academicYear, cycle, round, startDate, endDate, dojCutoff, active },
       { new: true }
     );
 

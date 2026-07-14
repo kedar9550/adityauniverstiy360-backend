@@ -25,6 +25,10 @@ const FeedbackRoundSchema = new mongoose.Schema({
     type: Date,
     required: true
   },
+  dojCutoff: {
+    type: Date,
+    required: false
+  },
   active: {
     type: Boolean,
     default: false

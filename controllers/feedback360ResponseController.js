@@ -10,7 +10,7 @@ exports.submitFeedback = async (req, res) => {
 
   try {
 
-    const { school, department, designation, responses, roundId, browserSignature, giverRole } = req.body;
+    const { school, department, designation, responses, roundId, browserSignature, giverRole, doj } = req.body;
 
     if (!school) {
       return res.status(400).json({ message: "School is required" })
@@ -44,6 +44,16 @@ exports.submitFeedback = async (req, res) => {
       return res.status(403).json({
         message: `Feedback forms can only be submitted between ${startDate.toDateString()} and ${endDate.toDateString()}.`
       });
+    }
+
+    if (activeRound.dojCutoff && doj) {
+      const dojDate = new Date(doj);
+      const cutoffDate = new Date(activeRound.dojCutoff);
+      if (dojDate > cutoffDate) {
+        return res.status(403).json({
+          message: "You are not eligible to provide feedback in this round as your Date of Joining is after the cutoff date."
+        });
+      }
     }
 
     // 2. Prevent Duplicate Submissions for the *same round*, *role*, and *Browser Signature/IP*

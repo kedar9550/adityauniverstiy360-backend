@@ -11,7 +11,7 @@ exports.getFeedbackForm = async (req, res) => {
 
   try {
 
-    const { school, department, browserSignature, employeeRole } = req.body;
+    const { school, department, browserSignature, employeeRole, doj } = req.body;
 
     const ipAddress = req.headers['x-forwarded-for'] || req.socket.remoteAddress;
 
@@ -31,6 +31,16 @@ exports.getFeedbackForm = async (req, res) => {
       return res.status(403).json({
         message: `Feedback forms are only available between ${startDate.toDateString()} and ${endDate.toDateString()}.`
       });
+    }
+
+    if (activeRound.dojCutoff && doj) {
+      const dojDate = new Date(doj);
+      const cutoffDate = new Date(activeRound.dojCutoff);
+      if (dojDate > cutoffDate) {
+        return res.status(403).json({
+          message: "You are not eligible to provide feedback in this round as your Date of Joining is after the cutoff date."
+        });
+      }
     }
 
     // 2️ Resolve school & department
